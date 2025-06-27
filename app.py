@@ -47,6 +47,54 @@ User Message: "{message}"
         return jsonify({"rewritten": f"Error: {str(e)}"}), 500
 
 
+@app.route('/api/autocorrect', methods=['POST'])
+def autocorrect():
+    data = request.json
+    message = data.get("message", "")
+
+    prompt = f"""
+You are a helpful assistant. Correct the grammar and punctuation of the following message, but keep the meaning and tone.
+
+Message: "{message}"
+Corrected:
+"""
+
+    try:
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        response = model.generate_content(prompt)
+        return jsonify({"corrected": response.text.strip()})
+    except Exception as e:
+        print("Gemini error:", e)
+        return jsonify({"corrected": message})  # fallback: original
+
+
+@app.route('/api/translate', methods=['POST'])
+def translate():
+    data = request.json
+    message = data.get("message", "")
+    language = data.get("language", "Spanish")
+
+    prompt = f"""
+Translate the following message into {language}.
+Only return the translated version. Do not explain or repeat the original.
+
+Message: {message}
+"""
+
+    try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
+
+        translated_text = response.text.strip()
+        print("✅ Translated text:", translated_text)
+
+        return jsonify({"translated": translated_text})
+
+    except Exception as e:
+        print("❌ Translation error:", e)
+        return jsonify({"translated": "Error translating."})
+
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host="0.0.0.0", port=port)
