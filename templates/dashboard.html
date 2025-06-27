@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -94,13 +94,13 @@
 </div>
       <div class="chat-input-box">
   <input type="text" id="user-input" placeholder="Type your message..." oninput="hideSuggestions()" />
-  <button onclick="getSuggestions()"><i class="fas fa-wand-magic-sparkles"></i></button>
   <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
 </div>
 
       <div class="chat-options">
         <button class="paraphrase" onclick="this.classList.toggle('active')">Paraphrase OFF</button>
-        <button class="translate" onclick="this.classList.toggle('active')">🌐 English → Spanish</button>
+      <button class="translate" onclick="toggleTranslate()">🌐 Translate</button>
+
       </div>
     </div>
   </div>
@@ -112,7 +112,49 @@
   <p><strong>Positive:</strong> <span id="positive-text"></span> <button onclick="copyText('positive-text')">📋 Copy</button></p>
   <button onclick="closePreview()">❌ Close</button>
 </div>
+
 <script>
+let typingTimer; // to track when user finishes typing
+const inputBox = document.getElementById("user-input");
+
+// 👇 this runs autoCorrectInput() after user stops typing for 800ms
+inputBox.addEventListener("input", () => {
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => {
+    autoCorrectInput();
+    getSuggestions();
+  }, 1000);
+});
+
+async function autoCorrectInput() {
+  const original = inputBox.value.trim();
+  if (!original) return;
+
+  try {
+    const response = await fetch('/api/autocorrect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: original })
+    });
+
+    const data = await response.json();
+    const corrected = data.corrected;
+
+    if (corrected && corrected !== original) {
+      inputBox.value = corrected;
+
+      // ✅ Only translate if translate is active
+      const isTranslateOn = document.querySelector(".translate").classList.contains("active");
+      if (isTranslateOn) {
+        await autoTranslateText(corrected);
+      }
+    }
+
+  } catch (error) {
+    console.error("Auto-correction error:", error);
+  }
+}
+
 document.getElementById("user-input").addEventListener("keydown", function(event) {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -139,14 +181,22 @@ function sendMessage() {
 }
 
 // ✨ Enhance suggestions before sending
+
+inputBox = document.getElementById("user-input");
+
+
+inputBox.addEventListener("input", () => {
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(getSuggestions, 1000); // 1 sec pause triggers suggestions
+});
+
 async function getSuggestions() {
-  const input = document.getElementById("user-input").value.trim();
+  const input = inputBox.value.trim();
   if (!input) return;
 
   const suggestionBox = document.getElementById("suggestion-box");
   const container = document.getElementById("suggestions");
   container.innerHTML = "⏳ Generating suggestions...";
-
   suggestionBox.style.display = "block";
 
   try {
@@ -158,15 +208,15 @@ async function getSuggestions() {
 
     const data = await response.json();
     const result = data.rewritten;
-     console.log("AI Response:", result);
+    console.log("Suggestions Response:", result);
 
-   const politeMatch = result.match(/Polite:\s*([\s\S]*?)\s*(?=Casual:|$)/);
-const casualMatch = result.match(/Casual:\s*([\s\S]*?)\s*(?=Positive:|$)/);
-const positiveMatch = result.match(/Positive:\s*([\s\S]*)/);
+    const politeMatch = result.match(/Polite:\s*([\s\S]*?)\s*(?=Casual:|$)/);
+    const casualMatch = result.match(/Casual:\s*([\s\S]*?)\s*(?=Positive:|$)/);
+    const positiveMatch = result.match(/Positive:\s*([\s\S]*)/);
 
-const polite = politeMatch ? politeMatch[1].trim() : "Not found";
-const casual = casualMatch ? casualMatch[1].trim() : "Not found";
-const positive = positiveMatch ? positiveMatch[1].trim() : "Not found";
+    const polite = politeMatch ? politeMatch[1].trim() : "Not found";
+    const casual = casualMatch ? casualMatch[1].trim() : "Not found";
+    const positive = positiveMatch ? positiveMatch[1].trim() : "Not found";
 
     container.innerHTML = `
       <p onclick="selectSuggestion('${polite.replace(/'/g, "\\'")}')">✨ ${polite}</p>
@@ -178,14 +228,68 @@ const positive = positiveMatch ? positiveMatch[1].trim() : "Not found";
   }
 }
 
-function selectSuggestion(text) {
+async function selectSuggestion(text) {
   document.getElementById("user-input").value = text;
   hideSuggestions();
+
+  // ✅ Check if Translate is ON
+  const isTranslateOn = document.querySelector(".translate").classList.contains("active");
+  if (isTranslateOn && targetLanguage) {
+    await autoTranslateText(text);
+  }
 }
+
 
 function hideSuggestions() {
   document.getElementById("suggestion-box").style.display = "none";
+
 }
+
+
+async function autoTranslateText(correctedText) {
+  if (!targetLanguage) return;
+
+  try {
+    const response = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: correctedText, language: targetLanguage })
+    });
+
+    const data = await response.json();
+    const translated = data.translated;
+    console.log("Translated Output:", translated);
+
+
+   if (translated) {
+  inputBox.value = translated;
+}
+
+
+  } catch (error) {
+    console.error("Translation error:", error);
+  }
+}
+
+//transaltion
+function toggleTranslate() {
+  const btn = document.querySelector(".translate");
+  btn.classList.toggle("active");
+
+  if (btn.classList.contains("active")) {
+    const lang = prompt("Enter the language to translate to (e.g., Spanish, French):");
+    if (lang) {
+      targetLanguage = lang.trim();
+      alert(`Translation set to: ${targetLanguage}`);
+    } else {
+      btn.classList.remove("active");
+      targetLanguage = "";
+    }
+  } else {
+    targetLanguage = "";
+  }
+}
+
 </script>
 
 
