@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatAI Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { display: flex; height: 100vh; background-color: #f4f5fb; overflow: hidden; }
+    .sidebar { width: 260px; background-color: white; padding: 1.5rem; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
+    .sidebar h2 { color: #5b57ff; font-size: 1.4rem; margin-bottom: 2rem; }
+    .quick-actions button, .setting-box { display: block; width: 100%; margin-bottom: 1rem; padding: 0.8rem; border: none; border-radius: 10px; font-weight: 600; text-align: left; }
+    .quick-actions button:nth-child(1) { background: #e6f0ff; }
+    .quick-actions button:nth-child(2) { background: #f2e6ff; }
+    .quick-actions button:nth-child(3) { background: #e6fff2; }
+    .quick-actions button:nth-child(4) { background: #fff5e6; }
+    .settings { margin-top: 2rem; }
+    .setting-box { background: #f0f0ff; padding: 0.8rem; border-left: 5px solid #5b57ff; }
+    .chat-section { flex: 1; display: flex; flex-direction: column; }
+    .chat-header { background-color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .chat-header .status { display: flex; align-items: center; gap: 10px; }
+    .chat-header .status-controls { display: flex; align-items: center; gap: 1.2rem; font-size: 1.2rem; color: #555; }
+    .chat-header .status-controls i { cursor: pointer; }
+    .chat-area { flex: 1; padding: 2rem; overflow-y: auto; background: #faf9ff; }
+    .message-box { max-width: 70%; margin-bottom: 1rem; padding: 1rem; border-radius: 10px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; cursor: context-menu; }
+    .message-box.user { align-self: flex-end; background: linear-gradient(135deg, #5b57ff, #9b50ff); color: white; }
+    .chat-input { padding: 1rem 2rem; background: white; border-top: 1px solid #e0e0e0; }
+    .chat-input-box { display: flex; align-items: center; gap: 1rem; }
+    .chat-input-box input { flex: 1; padding: 0.8rem 1rem; border: 1px solid #ccc; border-radius: 30px; }
+    .chat-input-box button { padding: 0.7rem 1.2rem; background-color: #5b57ff; color: white; border: none; border-radius: 50%; }
+    .chat-options { display: flex; gap: 1rem; margin-top: 0.8rem; }
+    .chat-options button { padding: 0.4rem 1rem; border: none; border-radius: 20px; font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+    .chat-options .paraphrase { background: #e0e0e0; color: #333; }
+    .chat-options .paraphrase.active { background: #d1c4e9; color: #512da8; }
+    .chat-options .translate { background: #f0e6ff; color: #6c2bd9; }
+    .chat-options .translate.active { background: #d1eaff; color: #0066cc; }
+    #rewrite-menu { display: none; position: absolute; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); border-radius: 8px; padding: 0.5rem; z-index: 1000; }
+    #rewrite-menu div { padding: 0.4rem 1rem; cursor: pointer; white-space: nowrap; }
+    #rewrite-menu div:hover { background-color: #f0f0f0; }
+    #preview-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 10px; padding: 1rem; box-shadow: 0 0 20px rgba(0,0,0,0.3); display: none; z-index: 1001; }
+    #preview-box p { margin-bottom: 1rem; }
+    #preview-box button { margin: 0 0.5rem; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; }
+    #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none; z-index: 999; }
+    .rewrite-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 16px;
+  margin-left: 8px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.message-box.user:hover .rewrite-btn {
+  color: #5b57ff;
+}
+
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>AI Assistant</h2>
+    <div class="quick-actions">
+      <button>🌐 Translate</button>
+      <button>📦 Paraphrase</button>
+      <button>⚡ Adjust Tone</button>
+      <button>📝 Grammar Check</button>
+    </div>
+    <div class="settings">
+      <div class="setting-box">😊 Friendly<br><small>Warm and approachable</small></div>
+      <div class="setting-box">🌐 Translation<br><small>English → Spanish</small></div>
+      <div class="setting-box">🤖 AI Enhanced<br><small>Intelligent responses active</small></div>
+    </div>
+  </div>
+  <div class="chat-section">
+    <div class="chat-header">
+      <div class="status"><strong>AI Assistant</strong></div>
+      <div class="status-controls">
+        <i class="fas fa-phone"></i><i class="fas fa-video"></i><i class="fas fa-expand"></i><i class="fas fa-cog"></i>
+      </div>
+    </div>
+    <div class="chat-area">
+      <div class="message-box user" oncontextmenu="showRewriteMenu(event, this)">Hi! I'd like to practice my Spanish conversation skills and also need help with professional email writing.</div>
+      <div class="message-box">¡Absolutamente! I'd be delighted to help you with both Spanish conversation practice and professional email writing...</div>
+    </div>
+    <div class="chat-input">
+       <div id="suggestion-box" style="display: none; background: white; border: 1px solid #ccc; padding: 10px; position: absolute; bottom: 80px; left: 20px; z-index: 1000; width: 60%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+  <p style="margin: 5px 0;"><strong>Suggestions:</strong></p>
+  <div id="suggestions">
+    <!-- AI suggestions will appear here -->
+  </div>
+</div>
+      <div class="chat-input-box">
+  <input type="text" id="user-input" placeholder="Type your message..." oninput="hideSuggestions()" />
+  <button onclick="getSuggestions()"><i class="fas fa-wand-magic-sparkles"></i></button>
+  <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+</div>
+
+      <div class="chat-options">
+        <button class="paraphrase" onclick="this.classList.toggle('active')">Paraphrase OFF</button>
+        <button class="translate" onclick="this.classList.toggle('active')">🌐 English → Spanish</button>
+      </div>
+    </div>
+  </div>
+<div id="overlay"></div>
+<div id="preview-box">
+    <div id="loading-message"> Loading rewrites...</div>
+  <p><strong>Polite:</strong> <span id="polite-text"></span> <button onclick="copyText('polite-text')">📋 Copy</button></p>
+  <p><strong>Casual:</strong> <span id="casual-text"></span> <button onclick="copyText('casual-text')">📋 Copy</button></p>
+  <p><strong>Positive:</strong> <span id="positive-text"></span> <button onclick="copyText('positive-text')">📋 Copy</button></p>
+  <button onclick="closePreview()">❌ Close</button>
+</div>
+<script>
+document.getElementById("user-input").addEventListener("keydown", function(event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    sendMessage();
+  }
+});
+
+function sendMessage() {
+  const input = document.getElementById('user-input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  const chatArea = document.querySelector('.chat-area');
+
+  // Add user message to chat
+  const userMsg = document.createElement('div');
+  userMsg.className = 'message-box user';
+  userMsg.innerHTML = `<span>${message}</span>`;
+  chatArea.appendChild(userMsg);
+
+  chatArea.scrollTop = chatArea.scrollHeight;
+  input.value = ''; // Clear input
+  hideSuggestions(); // Hide suggestion box after sending
+}
+
+// ✨ Enhance suggestions before sending
+async function getSuggestions() {
+  const input = document.getElementById("user-input").value.trim();
+  if (!input) return;
+
+  const suggestionBox = document.getElementById("suggestion-box");
+  const container = document.getElementById("suggestions");
+  container.innerHTML = "⏳ Generating suggestions...";
+
+  suggestionBox.style.display = "block";
+
+  try {
+    const response = await fetch('/api/rewrite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: input })
+    });
+
+    const data = await response.json();
+    const result = data.rewritten;
+     console.log("AI Response:", result);
+
+   const politeMatch = result.match(/Polite:\s*([\s\S]*?)\s*(?=Casual:|$)/);
+const casualMatch = result.match(/Casual:\s*([\s\S]*?)\s*(?=Positive:|$)/);
+const positiveMatch = result.match(/Positive:\s*([\s\S]*)/);
+
+const polite = politeMatch ? politeMatch[1].trim() : "Not found";
+const casual = casualMatch ? casualMatch[1].trim() : "Not found";
+const positive = positiveMatch ? positiveMatch[1].trim() : "Not found";
+
+    container.innerHTML = `
+      <p onclick="selectSuggestion('${polite.replace(/'/g, "\\'")}')">✨ ${polite}</p>
+      <p onclick="selectSuggestion('${casual.replace(/'/g, "\\'")}')">😎 ${casual}</p>
+      <p onclick="selectSuggestion('${positive.replace(/'/g, "\\'")}')">😊 ${positive}</p>
+    `;
+  } catch (e) {
+    container.innerHTML = "❌ Failed to fetch suggestions.";
+  }
+}
+
+function selectSuggestion(text) {
+  document.getElementById("user-input").value = text;
+  hideSuggestions();
+}
+
+function hideSuggestions() {
+  document.getElementById("suggestion-box").style.display = "none";
+}
+</script>
+
+
+</body>
+</html>
