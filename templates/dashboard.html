@@ -105,13 +105,18 @@
         <button class="bg-sky-500 text-white text-sm px-4 py-1 rounded-full hover:bg-sky-600">Send</button>
       </div>
       <!-- 🌐 Language Input (Initially Hidden) -->
-<input
-  id="languageInput"
-  type="text"
-  placeholder="Enter language (e.g. Hindi)"
-  class="hidden mt-2 px-3 py-1 border border-gray-300 rounded-md text-sm outline-none w-1/2"
-  onkeydown="handleLanguageSubmit(event)"
-/>
+<div id="languageInputBox" class="hidden mt-2 flex gap-2 items-center">
+  <input
+    id="languageInput"
+    type="text"
+    placeholder="Enter language (e.g. Hindi)"
+    class="px-3 py-1 border border-gray-300 rounded-md text-sm outline-none w-1/2"
+  />
+  <button onclick="submitLanguage()" class="bg-sky-500 hover:bg-sky-600 text-white px-4 py-1 rounded-full text-sm">
+    🔁 Enter
+  </button>
+</div>
+
 
 
       <!-- ✅ SUGGESTION BOX -->
@@ -272,12 +277,16 @@ function toggleTool(tool) {
 
     // Show language input if translate
     if (tool === 'translate') {
-      langInput.classList.remove('hidden');
-      translateLabel.textContent = 'Translate (On)';
-    }
+  document.getElementById('languageInputBox').classList.remove('hidden');
+  translateLabel.textContent = 'Translate (On)';
+
+  // 💡 NEW: Auto-translate current input if text is available
+}
+
   } else {
     activeTool = null;
-    langInput.classList.add('hidden');
+    document.getElementById('languageInputBox').classList.add('hidden');
+
 
     if (tool === 'translate') {
       translateLabel.textContent = 'Translate (Off)';
@@ -506,22 +515,30 @@ function useTranslated() {
 
 
 
-function handleLanguageSubmit(event) {
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    const langInput = document.getElementById('languageInput');
-    langInput.classList.add('hidden');
+function submitLanguage() {
+  const langInput = document.getElementById('languageInput');
+  const messageInput = document.querySelector('input[type="text"]');
+  const message = messageInput?.value.trim();
 
-    const messageInput = document.querySelector('input[type=\"text\"]');
-    const message = messageInput?.value.trim();
+  const selectedLang = langInput?.value.trim();
 
-    if (message) {
-      runTranslatePopup(message);
-    } else {
-      alert('Language is selected Now you can type.');
-    }
+  if (!selectedLang) {
+    alert('⚠️ Please enter a language.');
+    return;
   }
+
+  if (!message) {
+    alert('📝 Enter a message to translate.');
+    return;
+  }
+
+  // Hide the language input box
+  document.getElementById('languageInputBox').classList.add('hidden');
+
+  // Proceed to translate
+  runTranslatePopup(message);
 }
+
 
 //story writer
 function runStoryWriter() {
