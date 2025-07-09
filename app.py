@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
+model = genai.GenerativeModel('gemini-2.0-flash')
 
 @app.route('/')
 def landing():
@@ -49,7 +49,7 @@ User Message: "{message}"
 
 @app.route('/api/autocorrect', methods=['POST'])
 def autocorrect():
-    data = request.json
+    data = request.get_json()
     message = data.get("message", "")
 
     prompt = f"""
@@ -82,7 +82,7 @@ Message: {message}
 """
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content(prompt)
 
         translated_text = response.text.strip()
@@ -93,6 +93,37 @@ Message: {message}
     except Exception as e:
         print("❌ Translation error:", e)
         return jsonify({"translated": "Error translating."})
+    
+
+
+
+@app.route('/api/story-write', methods=['POST'])
+def story_write():
+    try:
+        data = request.get_json()
+        prompt = data.get("prompt", "").strip()
+
+        if not prompt:
+            return jsonify({"error": "Prompt is required"}), 400
+
+        # 🧠 Gemini Prompt
+        story_prompt = f"""
+        Write a creative and engaging story based on the following idea:
+        "{prompt}"
+
+        The story should be between 5 to 10 sentences.
+        Make it feel realistic and compelling.
+        """
+
+        response = model.generate_content(story_prompt)
+        story_text = response.text.strip()
+
+        return jsonify({ "story": story_text })
+
+    except Exception as e:
+        print("❌ Story generation failed:", e)
+        return jsonify({ "error": "Story generation failed." }), 500
+
 
 
 if __name__ == '__main__':
