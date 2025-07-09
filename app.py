@@ -47,26 +47,6 @@ User Message: "{message}"
         return jsonify({"rewritten": f"Error: {str(e)}"}), 500
 
 
-@app.route('/api/autocorrect', methods=['POST'])
-def autocorrect():
-    data = request.get_json()
-    message = data.get("message", "")
-
-    prompt = f"""
-You are a helpful assistant. Correct the grammar and punctuation of the following message, but keep the meaning and tone.
-
-Message: "{message}"
-Corrected:
-"""
-
-    try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(prompt)
-        return jsonify({"corrected": response.text.strip()})
-    except Exception as e:
-        print("Gemini error:", e)
-        return jsonify({"corrected": message})  # fallback: original
-
 
 @app.route('/api/translate', methods=['POST'])
 def translate():
@@ -123,6 +103,28 @@ def story_write():
     except Exception as e:
         print("❌ Story generation failed:", e)
         return jsonify({ "error": "Story generation failed." }), 500
+
+
+@app.route('/api/generate-content', methods=['POST'])
+def generate_content():
+    try:
+        data = request.get_json()
+        prompt = data.get("prompt", "")
+
+        content_prompt = f"""
+        Based on the following input, generate a professional, informative, and engaging piece of content:
+        "{prompt}"
+        Length: 4-7 sentences. Use clear and natural language.
+        """
+
+        response = model.generate_content(content_prompt)
+        content_text = response.text.strip()
+
+        return jsonify({ "content": content_text })
+
+    except Exception as e:
+        print("❌ Error generating content:", e)
+        return jsonify({ "error": "Content generation failed." }), 500
 
 
 
