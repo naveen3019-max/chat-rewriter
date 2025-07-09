@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Home Chat UI</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
   <style>
     @keyframes textPulse {
       0%, 100% { opacity: 1; }
@@ -76,7 +78,7 @@
     <h2 class="text-xl font-bold text-purple-600 mb-4">AI Smart Features</h2>
     <div class="flex flex-col gap-3 text-sm">
       <button onclick="runStoryWriter()" class="bg-yellow-100 hover:bg-yellow-200 transition-colors duration-300 px-1 py-2 rounded-md">🧠 AI Story Writer</button>
-      <button class="bg-purple-100 hover:bg-purple-200 transition-colors duration-300 px-4 py-2 rounded-md">💡 AI Content Generator</button>
+      <button onclick="runContentGenerator()" class="bg-purple-100 hover:bg-purple-200 transition-colors duration-300 px-4 py-2 rounded-md">💡 AI Content Generator</button>
       <button class="bg-green-100 hover:bg-green-200 transition-colors duration-300 px-4 py-2 rounded-md">🪄 AI Message Rewriter</button>
       <button class="bg-orange-100 hover:bg-orange-200 transition-colors duration-300 px-4 py-2 rounded-md">🤖 Smart Auto-Replies Bar</button>
       <button class="bg-yellow-100 hover:bg-yellow-200 transition-colors duration-300 px-4 py-2 rounded-md">📝 Quick Draft Generator</button>
@@ -95,7 +97,7 @@
         <input
           type="text"
           placeholder="Type a message..."
-          oninput="handleTyping(event)"
+           oninput="runRewriteSuggestion(event)"
           class="flex-1 text-sm outline-none bg-transparent"
         />
         <button class="text-xl">📎</button>
@@ -149,12 +151,33 @@
     <button onclick="hideStory()" class="bg-gray-200 hover:bg-gray-300 text-sm px-4 py-1 rounded-full">❌ Cancel</button>
   </div>
 </div>
+<!-- ✅ AI Content Generator Popup -->
+<div id="contentPopup" class="absolute bottom-[150px] left-0 w-full bg-white border border-gray-300 rounded-lg shadow-xl p-4 space-y-2 hidden z-50">
+  <div class="flex justify-between items-center mb-2">
+    <h4 class="text-sm font-semibold text-gray-700">🧠 AI-Generated Content</h4>
+    <button onclick="hideContent()" class="text-gray-500 hover:text-red-500 text-sm">✖️</button>
+  </div>
+  <div class="text-sm text-gray-700 whitespace-pre-line" id="contentText"></div>
+  <div class="flex gap-2 mt-3">
+    <button onclick="useContent()" class="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-1 rounded-full">✅ Use Content</button>
+    <button onclick="hideContent()" class="bg-gray-200 hover:bg-gray-300 text-sm px-4 py-1 rounded-full">❌ Cancel</button>
+  </div>
+</div>
+
 
       <!-- TRANSLATE / PARAPHRASE BUTTONS -->
-      <div class="flex gap-2 mt-2">
-        <button id="translateBtn" onclick="toggleTool('translate')" class="bg-sky-100 text-gray-700 hover:bg-sky-200 px-4 py-1 rounded-full text-sm font-medium transition">🌐 Translate</button>
-        <button id="paraphraseBtn" onclick="toggleTool('paraphrase')" class="bg-sky-100 text-gray-700 hover:bg-sky-200 px-4 py-1 rounded-full text-sm font-medium transition">✍️ Paraphrase</button>
-      </div>
+      <!-- Wrap inside a flex container -->
+<div class="flex gap-2 mt-2">
+  <button id="translateBtn" onclick="toggleTool('translate')" class="bg-sky-100 text-gray-700 hover:bg-sky-200 px-3 py-1 rounded-full text-sm font-medium transition flex items-center gap-2">
+    <span class="material-icons text-base">g_translate</span>
+    <span id="translateLabel">Translate (Off)</span>
+  </button>
+
+  <button id="paraphraseBtn" onclick="toggleTool('paraphrase')" class="bg-sky-100 text-gray-700 hover:bg-sky-200 px-4 py-1 rounded-full text-sm font-medium transition">
+    ✍️ Paraphrase
+  </button>
+</div>
+
 
     </div>
   </div>
@@ -233,27 +256,35 @@ function activateTab(tabId) {
 
   
  
+function toggleTool(tool) {
+  document.getElementById('translateBtn').className =
+    'tool-btn bg-sky-100 text-gray-700 hover:bg-sky-200 px-4 py-1 rounded-full text-sm font-medium transition';
+  document.getElementById('paraphraseBtn').className =
+    'tool-btn bg-sky-100 text-gray-700 hover:bg-sky-200 px-4 py-1 rounded-full text-sm font-medium transition';
 
-  function toggleTool(tool) {
-    document.getElementById('translateBtn').className =
-      'tool-btn bg-sky-100 text-gray-700 hover:bg-sky-200 px-4 py-1 rounded-full text-sm font-medium transition';
-    document.getElementById('paraphraseBtn').className =
-      'tool-btn bg-sky-100 text-gray-700 hover:bg-sky-200 px-4 py-1 rounded-full text-sm font-medium transition';
+  const langInput = document.getElementById('languageInput');
+  const translateLabel = document.getElementById('translateLabel');
 
-        const langInput = document.getElementById('languageInput');
-
-    if (activeTool !== tool) {
-      activeTool = tool;
-      document.getElementById(`${tool}Btn`).className =
+  if (activeTool !== tool) {
+    activeTool = tool;
+    document.getElementById(`${tool}Btn`).className =
       'tool-btn bg-sky-600 text-white px-4 py-1 rounded-full text-sm font-medium transition';
-      // Show input only for translate
-    if (tool === 'translate') langInput.classList.remove('hidden');
-    else langInput.classList.add('hidden');
+
+    // Show language input if translate
+    if (tool === 'translate') {
+      langInput.classList.remove('hidden');
+      translateLabel.textContent = 'Translate (On)';
+    }
   } else {
     activeTool = null;
     langInput.classList.add('hidden');
+
+    if (tool === 'translate') {
+      translateLabel.textContent = 'Translate (Off)';
+    }
   }
 }
+
   //setting
   let isSettingsOpen = false;
 function toggleSettings() {
@@ -303,39 +334,37 @@ function handleTyping(event) {
 }
 
 // 🔄 Step 1: Autocorrect → Step 2: Rewrite
-async function runAutoCorrectAndSuggest(rawMessage) {
-  try {
-    const autoRes = await fetch('/api/autocorrect', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: rawMessage })
-    });
+function runRewriteSuggestion(event) {
+  clearTimeout(suggestionTimeout);
 
-    if (!autoRes.ok) throw new Error('Autocorrect failed');
-
-    const autoData = await autoRes.json();
-    const correctedMessage = autoData.corrected;
-
-    document.querySelector('input[type="text"]').value = correctedMessage;
-
-    const rewriteRes = await fetch('/api/rewrite', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: correctedMessage })
-    });
-
-    if (!rewriteRes.ok) throw new Error('Rewrite failed');
-
-    const rewriteData = await rewriteRes.json();
-    console.log("✍️ Rewrite response:", rewriteData.rewritten);
-
-    showSuggestions(rewriteData.rewritten);
-
-  } catch (error) {
-    console.error('Autocorrect/Rewrite Error:', error);
-    hideSuggestions(); // fallback if error
+  const input = event.target.value;
+  if (!input.trim()) {
+    hideSuggestions();
+    return;
   }
+
+  suggestionTimeout = setTimeout(async () => {
+    try {
+      const rewriteRes = await fetch('/api/rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input })
+      });
+
+      if (!rewriteRes.ok) throw new Error('Rewrite failed');
+
+      const rewriteData = await rewriteRes.json();
+      console.log("✍️ Rewrite response:", rewriteData.rewritten);
+
+      showSuggestions(rewriteData.rewritten);
+
+    } catch (error) {
+      console.error('Rewrite Error:', error);
+      hideSuggestions();
+    }
+  }, 1000);
 }
+
 
 // 💬 Show Rewrite Suggestions
 function showSuggestions(rawText) {
@@ -549,7 +578,58 @@ function useStory() {
   hideStory();
 }
 
+//content generator
+function runContentGenerator() {
+  const inputBox = document.querySelector('input[type="text"]');
+  const prompt = inputBox.value.trim();
 
+  if (!prompt) {
+    alert('❗ Please enter a prompt first.');
+    return;
+  }
+
+  fetch('/api/generate-content', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.content) {
+        alert('❌ No content generated.');
+        return;
+      }
+
+      const contentEl = document.getElementById('contentText');
+      contentEl.textContent = '';
+      const words = data.content.split(' ');
+
+      words.forEach((word, i) => {
+        setTimeout(() => {
+          contentEl.textContent += word + ' ';
+        }, i * 100);
+      });
+
+      document.getElementById('contentPopup').classList.remove('hidden');
+    })
+    .catch(err => {
+      console.error('Content generation failed:', err);
+      alert('❌ Failed to generate content. Try again.');
+    });
+}
+
+function hideContent() {
+  document.getElementById('contentPopup')?.classList.add('hidden');
+}
+
+function useContent() {
+  const content = document.getElementById('contentText')?.textContent.trim();
+  const inputBox = document.querySelector('input[type="text"]');
+  if (content && inputBox) {
+    inputBox.value = content;
+  }
+  hideContent();
+}
   </script>
 </body>
 </html>
