@@ -236,8 +236,6 @@ def generate_content():
         print("❌ Error generating content:", e)
         return jsonify({ "error": "Content generation failed." }), 500
 
-
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))  # PORT is set by Render
     app.run(host="0.0.0.0", port=port)
