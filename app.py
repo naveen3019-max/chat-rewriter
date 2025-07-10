@@ -1,22 +1,130 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+from werkzeug.security import generate_password_hash, check_password_hash
+from pymongo import MongoClient
+from flask import session
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+MONGO_URI = os.getenv("MONGODB_URI")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+
+client = MongoClient(MONGO_URI)
+db = client["thinkfeelshare"]
+users = db["users"]
+
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel('gemini-2.0-flash')
 
 @app.route('/')
 def landing():
-    return render_template('landing.html')
+    return render_template('login.html')
+
+from flask import Flask, render_template
+
+@app.route("/register")
+def serve_register():
+    return render_template("Register.html")
+
+@app.route('/api/register', methods=['POST'])
+def register_user():
+    data = request.get_json()
+    name = data.get("name")
+    email = data.get("email")
+    phone = data.get("phone", "")
+    password = data.get("password")
+
+    if users.find_one({"email": email}):
+        return jsonify({"error": "User already exists"}), 400
+
+    hashed_password = generate_password_hash(password)
+    users.insert_one({
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "password": hashed_password
+    })
+
+    return jsonify({"message": "Registration successful"}), 200
+
+@app.route('/api/login', methods=['POST'])
+def login_user():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    user = users.find_one({"email": email})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if check_password_hash(user["password"], password):
+        session["user_email"] = email  # ✅ Set session
+        return jsonify({"message": "Login successful", "user": {"name": user["name"], "email": user["email"]}})
+    else:
+        return jsonify({"error": "Invalid password"}), 401
+
+
 
 @app.route('/dashboard')
 def dashboard():
-    return render_template('dashboard.html')
+    if "user_email" not in session:
+        return redirect(url_for("landing"))  # redirect to login
+    return render_template("dashboard.html")
+
+@app.route('/api/me')
+def get_user_profile():
+    if "user_email" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = users.find_one({"email": session["user_email"]})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify({
+        "name": user.get("name"),
+        "email": user.get("email"),
+        "phone": user.get("phone", ""),
+        "bio": user.get("bio", "")
+    })
+
+@app.route('/api/update-profile', methods=['POST'])
+def update_user_profile():
+    if "user_email" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    old_email = session["user_email"]
+    data = request.get_json()
+
+    updates = {
+        "name": data.get("name"),
+        "phone": data.get("phone"),
+        "bio": data.get("bio")
+    }
+
+    new_email = data.get("email")
+
+    if new_email and new_email != old_email:
+        if users.find_one({"email": new_email}):
+            return jsonify({"error": "Email already in use"}), 400
+        updates["email"] = new_email
+        session["user_email"] = new_email  # 🔄 Update session
+
+    if data.get("password"):
+        updates["password"] = generate_password_hash(data["password"])
+
+    users.update_one({"email": old_email}, {"$set": updates})
+
+    return jsonify({"success": True})
+
 
 @app.route('/api/rewrite', methods=['POST'])
 def rewrite_all():
@@ -45,6 +153,7 @@ User Message: "{message}"
     except Exception as e:
         print("Gemini Error:", e)
         return jsonify({"rewritten": f"Error: {str(e)}"}), 500
+
 
 
 
@@ -103,6 +212,7 @@ def story_write():
     except Exception as e:
         print("❌ Story generation failed:", e)
         return jsonify({ "error": "Story generation failed." }), 500
+    
 
 
 @app.route('/api/generate-content', methods=['POST'])
