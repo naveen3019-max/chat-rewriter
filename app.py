@@ -15,16 +15,12 @@ app = Flask(__name__)
 CORS(app)
 MONGO_URI = os.getenv("MONGODB_URI")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback_dev_secret")
+app.secret_key = os.getenv("SECRET_KEY")
 
-# MongoDB Setup
-try:
-    client = MongoClient(MONGO_URI)
-    db = client["thinkfeelshare"]
-    users = db["users"]
-    print("✅ MongoDB connected successfully.")
-except Exception as e:
-    print("❌ MongoDB connection failed:", e)
+client = MongoClient(MONGO_URI)
+db = client["thinkfeelshare"]
+users = db["users"]
+
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel('gemini-2.0-flash')
