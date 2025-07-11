@@ -816,15 +816,32 @@ window.addEventListener('load', async () => {
         });
 
         socket.on('receive_message', (data) => {
-          const { from, message } = data;
-          showIncomingMessage(from, message);
-        });
+  const { from, message } = data;
+
+  // 🔥 Set the sender as the new targetPhone if not already set
+  if (!targetPhone) {
+    targetPhone = from;
+    console.log("📲 Setting targetPhone to:", targetPhone);
+  }
+
+  showIncomingMessage(from, message);
+});
+
+
+       
       }
     }
   } catch (err) {
     console.error('⚠️ Auto socket connection failed:', err);
   }
 });
+
+if (!targetPhone) {
+  targetPhone = from;
+  console.log("📲 Setting targetPhone to:", targetPhone);
+  loadChatMessages(); // Load history
+}
+
   </script>
 </body>
 </html>
