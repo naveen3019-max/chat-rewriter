@@ -70,8 +70,10 @@ def login_user():
         return jsonify({"error": "User not found"}), 404
 
     if check_password_hash(user["password"], password):
-        session["user_email"] = email  # ✅ Set session
-        return jsonify({"message": "Login successful", "user": {"name": user["name"], "email": user["email"]}})
+    session["user_email"] = email
+    session["phone"] = user["phone"]  # ✅ ADD THIS
+    return jsonify({"message": "Login successful", "user": {"name": user["name"], "email": user["email"]}})
+
     else:
         return jsonify({"error": "Invalid password"}), 401
 
