@@ -746,6 +746,21 @@ async function connectToUser() {
   await loadChatMessages();
 
 }
+async function loadChatMessages() {
+  const res = await fetch(`/api/messages/${targetPhone}`);
+  const data = await res.json();
+
+  const container = document.getElementById("chatMessages");
+  container.innerHTML = ''; // Clear old messages
+
+  data.chat.forEach(msg => {
+    if (msg.from === currentUserPhone) {
+      showOutgoingMessage(msg.message);
+    } else {
+      showIncomingMessage(msg.from, msg.message);
+    }
+  });
+}
 
 function sendMessage() {
   const input = document.querySelector('input[type="text"]');
