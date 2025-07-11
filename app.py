@@ -70,14 +70,18 @@ def login_user():
         return jsonify({"error": "User not found"}), 404
 
     if check_password_hash(user["password"], password):
-    session["user_email"] = email
-    session["phone"] = user["phone"]  # ✅ ADD THIS
-    return jsonify({"message": "Login successful", "user": {"name": user["name"], "email": user["email"]}})
-
+        session["user_email"] = email
+        session["phone"] = user["phone"]  # ✅ Now properly indented
+        return jsonify({
+            "message": "Login successful",
+            "user": {
+                "name": user["name"],
+                "email": user["email"],
+                "phone": user.get("phone", "")
+            }
+        })
     else:
         return jsonify({"error": "Invalid password"}), 401
-
-
 
 @app.route('/dashboard')
 def dashboard():
