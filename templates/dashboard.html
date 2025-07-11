@@ -799,8 +799,32 @@ function showOutgoingMessage(message) {
   container.scrollTop = container.scrollHeight;
 }
 
+window.addEventListener('load', async () => {
+  try {
+    const res = await fetch('/api/me');
+    const data = await res.json();
 
+    if (data?.phone) {
+      currentUserPhone = data.phone;
 
+      if (!socket) {
+        socket = io();
+
+        socket.on('connect', () => {
+          socket.emit('join', { phone: currentUserPhone });  // ✅ Join room immediately
+          console.log("✅ Auto-joined room:", currentUserPhone);
+        });
+
+        socket.on('receive_message', (data) => {
+          const { from, message } = data;
+          showIncomingMessage(from, message);
+        });
+      }
+    }
+  } catch (err) {
+    console.error('⚠️ Auto socket connection failed:', err);
+  }
+});
   </script>
 </body>
 </html>
