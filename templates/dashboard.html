@@ -245,6 +245,19 @@ let activeTabId = null;
 
 // ✅ Define the activateTab function
 function activateTab(tabId) {
+  // Auto-hide tab content when mouse leaves it
+['contacts', 'status', 'calls', 'profile', 'ai'].forEach(tabId => {
+  const content = document.getElementById(`tabContent-${tabId}`);
+  if (content) {
+    content.addEventListener('mouseleave', () => {
+      content.classList.add('hidden');
+      const tab = document.getElementById(`tab-${tabId}`);
+      tab?.classList.remove('bg-sky-500', 'text-white');
+      tab?.classList.add('bg-sky-100', 'text-gray-700');
+    });
+  }
+});
+
   // Close all other tab panels
   const tabs = ['chats', 'contacts', 'status', 'calls', 'profile', 'ai'];
   tabs.forEach(id => {
