@@ -83,6 +83,7 @@ def login_user():
     else:
         return jsonify({"error": "Invalid password"}), 401
 
+
 @app.route('/dashboard')
 def dashboard():
     if "user_email" not in session:
