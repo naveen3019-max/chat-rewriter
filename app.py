@@ -8,11 +8,14 @@ from pymongo import MongoClient
 from flask import session
 from dotenv import load_dotenv
 import os
+from flask_socketio import SocketIO, emit, join_room
+import datetime
 
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
 MONGO_URI = os.getenv("MONGODB_URI")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 app.secret_key = os.getenv("SECRET_KEY")
@@ -79,6 +82,58 @@ def dashboard():
     if "user_email" not in session:
         return redirect(url_for("landing"))  # redirect to login
     return render_template("dashboard.html")
+
+from flask_socketio import SocketIO, emit, join_room
+
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+@socketio.on('join')
+def handle_join(data):
+    phone = data.get('phone')
+    if phone:
+        join_room(phone)
+        print(f"User joined room: {phone}")
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    from_phone = data.get("from")
+    to_phone = data.get("to")
+    message = data.get("message")
+
+    # Save to DB
+    db.messages.insert_one({
+        "from": from_phone,
+        "to": to_phone,
+        "message": message,
+        "timestamp": datetime.datetime.utcnow()
+    })
+
+    # Emit to recipient room
+    socketio.emit('receive_message', {"from": from_phone, "message": message}, room=to_phone)
+
+
+@app.route('/api/messages/<target_phone>', methods=['GET'])
+def get_messages(target_phone):
+    current_user = get_logged_in_user()  # however you identify logged-in user
+    current_phone = current_user.get('phone')
+
+    chat = list(db.messages.find({
+        "$or": [
+            {"from": current_phone, "to": target_phone},
+            {"from": target_phone, "to": current_phone}
+        ]
+    }, {"_id": 0}).sort("timestamp", 1))  # sort by time
+
+    return jsonify({"chat": chat})
+
+def get_logged_in_user():
+    phone = session.get("phone")
+    if not phone:
+        return None
+
+    return db.users.find_one({"phone": phone})
+
+
 
 @app.route('/api/me')
 def get_user_profile():
@@ -236,6 +291,6 @@ def generate_content():
         print("❌ Error generating content:", e)
         return jsonify({ "error": "Content generation failed." }), 500
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # PORT is set by Render
-    app.run(host="0.0.0.0", port=port)
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
