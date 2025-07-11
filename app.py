@@ -14,7 +14,7 @@ import datetime
 load_dotenv()
 
 app = Flask(__name__)
-socketio = SocketIO(app, async_mode='threading')
+socketio = SocketIO(app, async_mode='threading' cors_allowed_origins="*")
 
 MONGO_URI = os.getenv("MONGODB_URI")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
