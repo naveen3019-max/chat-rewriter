@@ -299,5 +299,43 @@ def generate_content():
         return jsonify({ "error": "Content generation failed." }), 500
 
 
+@app.route('/api/quick-draft', methods=['POST'])
+def quick_draft():
+    try:
+        data = request.get_json()
+        intent = data.get("intent", "").lower().strip()
+
+        if not intent:
+            return jsonify({"error": "Intent is required"}), 400
+
+        prompt = f"""
+You are an AI assistant helping users write messages.
+
+The user wants to send a message with the following intent: "{intent}"
+
+Generate 3 distinct message drafts that fit this intent.
+Use a friendly, human-like tone. Make each draft different in style (e.g. friendly, apologetic, direct).
+
+Only return the 3 messages. Format:
+1. <Message 1>
+2. <Message 2>
+3. <Message 3>
+"""
+
+        response = model.generate_content(prompt)
+        if not response or not response.text:
+            return jsonify({"error": "AI returned no result"}), 500
+
+        lines = response.text.strip().split("\n")
+        suggestions = [line[3:].strip() for line in lines if line.strip().startswith(("1.", "2.", "3."))]
+
+        return jsonify({"drafts": suggestions})
+
+    except Exception as e:
+        print("❌ Quick Draft Error:", e)
+        return jsonify({"error": "Failed to generate drafts"}), 500
+
+
+
 if __name__ == '__main__':
     socketio.run(app, debug=True)
