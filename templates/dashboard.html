@@ -20,40 +20,16 @@
     .hidden { display: none; }
 
   
-  @keyframes fadeInSlide {
-    0% {
-      opacity: 0;
-      transform: translateY(10px) scale(0.95);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
+  
+
+    @keyframes chatBounce {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
   }
-
-  .chat-bubble {
-    animation: fadeInSlide 0.35s ease-out;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-    transition: background-color 0.3s, transform 0.3s;
+  
+  .chat-bubble-animate {
+    animation: chatBounce 0.3s ease-out;
   }
-
-  .chat-bubble:hover {
-    transform: scale(1.02);
-    background-color: #f0f9ff;
-  }
-
-  .chat-bubble-outgoing:hover {
-    background-color: #0284c7 !important;
-  }
-
-  @keyframes chatBounce {
-  0% { transform: scale(0.8); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.chat-bubble-animate {
-  animation: chatBounce 0.3s ease-out;
-}
 
 </style>
 
