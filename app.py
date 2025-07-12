@@ -112,7 +112,7 @@ def handle_send_message(data):
         "from": from_phone,
         "to": to_phone,
         "message": message,
-        "timestamp": datetime.datetime.utcnow()
+        "timestamp": datetime.datetime.utcnow(),
         "deleted_for": [] 
     })
 
