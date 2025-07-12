@@ -19,7 +19,7 @@
     }
     .hidden { display: none; }
 
-  <style>
+  
   @keyframes fadeInSlide {
     0% {
       opacity: 0;
@@ -45,9 +45,19 @@
   .chat-bubble-outgoing:hover {
     background-color: #0284c7 !important;
   }
+
+  @keyframes chatBounce {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.chat-bubble-animate {
+  animation: chatBounce 0.3s ease-out;
+}
+
 </style>
 
-  </style>
+  
 </head>
 <body class="bg-gradient-to-tr from-white via-sky-100 to-blue-50 min-h-screen font-sans text-gray-800">
 
@@ -795,11 +805,22 @@ async function connectToUser() {
       socket.emit('join', { phone: currentUserPhone });
       console.log("Connected and joined room:", currentUserPhone);
     });
-
-    socket.on('receive_message', (data) => {
+      socket.on('receive_message', (data) => {
       const { from, message } = data;
+
+      // Clear old smart replies
+      const container = document.getElementById('chatMessages');
+      const lastBubble = container.lastElementChild;
+      if (lastBubble) {
+          const oldReplyBar = lastBubble.querySelector('.smart-reply-bar');
+          if (oldReplyBar) oldReplyBar.remove();
+      }
+
       showIncomingMessage(from, message);
-    });
+  });
+
+
+    
   }
 
   alert(`✅ Connected to chat with ${targetPhone}`);
@@ -845,7 +866,7 @@ function showIncomingMessage(sender, message) {
   bubbleWrapper.className = 'flex flex-col items-start gap-1 max-w-[70%]';
 
   const bubble = document.createElement('div');
-  bubble.className = 'bg-gray-200 text-sm px-3 py-2 rounded-lg self-start max-w-[70%] chat-bubble';
+  bubble.className = 'chat-bubble-animate bg-gray-200 text-sm px-3 py-2 rounded-lg';
   bubble.textContent = `${message}  ← (${sender})`;
   bubbleWrapper.appendChild(bubble);
 
@@ -905,7 +926,7 @@ function showOutgoingMessage(message) {
   const container = document.getElementById('chatMessages');
 
   const bubble = document.createElement('div');
-  bubble.className = 'bg-sky-500 text-white text-sm px-3 py-2 rounded-lg self-end max-w-[70%] chat-bubble chat-bubble-outgoing';
+  bubble.className = 'chat-bubble-animate bg-sky-500 text-white text-sm px-3 py-2 rounded-lg self-end max-w-[70%]';
   bubble.textContent = message;
 
   container.appendChild(bubble);
