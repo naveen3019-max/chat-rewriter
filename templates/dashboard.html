@@ -846,7 +846,10 @@ function showIncomingMessage(sender, message) {
   bubble.textContent = `${message}  ← (${sender})`;
   bubbleWrapper.appendChild(bubble);
 
-  // 🌟 Fetch smart replies only for the last message
+  // 🔥 Clear existing smart reply bars first
+  document.querySelectorAll('.smart-reply-bar').forEach(el => el.remove());
+
+  // 🌟 Fetch smart replies
   fetch('/api/smart-reply', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -855,38 +858,30 @@ function showIncomingMessage(sender, message) {
   .then(res => res.json())
   .then(data => {
     if (data.replies && data.replies.length > 0) {
-      const replyBarWrapper = document.createElement('div');
-      replyBarWrapper.className = 'flex gap-2 mt-1 flex-wrap items-center';
+      const replyBar = document.createElement('div');
+      replyBar.className = 'smart-reply-bar flex gap-2 mt-1 flex-wrap';
 
-      // Smart reply buttons
       data.replies.forEach(reply => {
         const btn = document.createElement('button');
-        btn.className = 'bg-sky-100 hover:bg-sky-200 text-sm px-3 py-1 rounded-full transition shadow-sm';
+        btn.className = 'bg-sky-100 hover:bg-sky-200 text-sm px-3 py-1 rounded-full transition animate-pulse shadow-sm';
         btn.textContent = reply;
 
         btn.onclick = () => {
           document.querySelector('input[type="text"]').value = reply;
-          replyBarWrapper.remove();  // ❌ Hide after selection
+          replyBar.remove(); // ✅ hide suggestions after click
         };
 
-        replyBarWrapper.appendChild(btn);
+        replyBar.appendChild(btn);
       });
 
-      // ❌ Close button
+      // ❌ Add close button
       const closeBtn = document.createElement('button');
-      closeBtn.textContent = '✖️';
-      closeBtn.className = 'text-red-500 text-xs ml-2 hover:text-red-700';
-      closeBtn.onclick = () => {
-        replyBarWrapper.remove(); // ❌ Hide when closed
-      };
-      replyBarWrapper.appendChild(closeBtn);
+      closeBtn.className = 'text-red-500 text-sm font-bold ml-auto';
+      closeBtn.textContent = '✖';
+      closeBtn.onclick = () => replyBar.remove();
+      replyBar.appendChild(closeBtn);
 
-      // ✅ Only keep one active replyBar
-      const existingBars = container.querySelectorAll('.smart-reply-bar');
-      existingBars.forEach(el => el.remove());
-
-      replyBarWrapper.classList.add('smart-reply-bar');
-      bubbleWrapper.appendChild(replyBarWrapper);
+      bubbleWrapper.appendChild(replyBar);
     }
   })
   .catch(err => {
@@ -1008,6 +1003,7 @@ async function selectIntent(intent) {
   }
 }
 
+//delete
 async function deleteChat() {
   if (!targetPhone) {
     alert("❗ No chat selected to delete.");
@@ -1028,6 +1024,7 @@ async function deleteChat() {
     if (data.success) {
       alert("✅ Chat deleted (for you only).");
       document.getElementById("chatMessages").innerHTML = "";
+      await loadChatMessages(); // ✅ fetch again
     } else {
       alert("❌ Failed to delete chat.");
     }
