@@ -836,20 +836,17 @@ function sendMessage() {
 }
 //incoming
 function showIncomingMessage(sender, message) {
+  socket.on('receive_message', (data) => {
+  const { from, message } = data;
+
+  // Clear all previous smart replies
   const container = document.getElementById('chatMessages');
+  const allReplyBars = container.querySelectorAll('.smart-reply-bar');
+  allReplyBars.forEach(bar => bar.remove());
 
-  const bubbleWrapper = document.createElement('div');
-  bubbleWrapper.className = 'flex flex-col items-start gap-1 max-w-[70%]';
+  showIncomingMessage(from, message);
 
-  const bubble = document.createElement('div');
-  bubble.className = 'chat-bubble-animate bg-gray-200 text-sm px-3 py-2 rounded-lg';
-  bubble.textContent = `${message}  ← (${sender})`;
-  bubbleWrapper.appendChild(bubble);
-
-  // 🔥 Clear existing smart reply bars first
-  document.querySelectorAll('.smart-reply-bar').forEach(el => el.remove());
-
-  // 🌟 Fetch smart replies
+  // Fetch smart replies ONLY for the last message
   fetch('/api/smart-reply', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -858,38 +855,33 @@ function showIncomingMessage(sender, message) {
   .then(res => res.json())
   .then(data => {
     if (data.replies && data.replies.length > 0) {
+      const lastBubble = container.lastElementChild;
       const replyBar = document.createElement('div');
       replyBar.className = 'smart-reply-bar flex gap-2 mt-1 flex-wrap';
 
       data.replies.forEach(reply => {
         const btn = document.createElement('button');
-        btn.className = 'bg-sky-100 hover:bg-sky-200 text-sm px-3 py-1 rounded-full transition animate-pulse shadow-sm';
+        btn.className = 'bg-sky-100 hover:bg-sky-200 text-sm px-3 py-1 rounded-full';
         btn.textContent = reply;
-
         btn.onclick = () => {
           document.querySelector('input[type="text"]').value = reply;
-          replyBar.remove(); // ✅ hide suggestions after click
+          replyBar.remove();  // Auto-hide on selection
         };
-
         replyBar.appendChild(btn);
       });
 
-      // ❌ Add close button
+      // Add close button
       const closeBtn = document.createElement('button');
-      closeBtn.className = 'text-red-500 text-sm font-bold ml-auto';
       closeBtn.textContent = '✖';
+      closeBtn.className = 'text-red-500';
       closeBtn.onclick = () => replyBar.remove();
       replyBar.appendChild(closeBtn);
 
-      bubbleWrapper.appendChild(replyBar);
+      if (lastBubble) lastBubble.appendChild(replyBar);
     }
-  })
-  .catch(err => {
-    console.error('❌ Smart reply failed:', err);
   });
+});
 
-  container.appendChild(bubbleWrapper);
-  container.scrollTop = container.scrollHeight;
 }
 
 
