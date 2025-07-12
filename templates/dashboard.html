@@ -18,6 +18,35 @@
       animation: textPulse 3s ease-in-out infinite;
     }
     .hidden { display: none; }
+
+  <style>
+  @keyframes fadeInSlide {
+    0% {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .chat-bubble {
+    animation: fadeInSlide 0.35s ease-out;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    transition: background-color 0.3s, transform 0.3s;
+  }
+
+  .chat-bubble:hover {
+    transform: scale(1.02);
+    background-color: #f0f9ff;
+  }
+
+  .chat-bubble-outgoing:hover {
+    background-color: #0284c7 !important;
+  }
+</style>
+
   </style>
 </head>
 <body class="bg-gradient-to-tr from-white via-sky-100 to-blue-50 min-h-screen font-sans text-gray-800">
@@ -816,7 +845,7 @@ function showIncomingMessage(sender, message) {
   bubbleWrapper.className = 'flex flex-col items-start gap-1 max-w-[70%]';
 
   const bubble = document.createElement('div');
-  bubble.className = 'bg-gray-200 text-sm px-3 py-2 rounded-lg';
+  bubble.className = 'bg-gray-200 text-sm px-3 py-2 rounded-lg self-start max-w-[70%] chat-bubble';
   bubble.textContent = `${message}  ← (${sender})`;
   bubbleWrapper.appendChild(bubble);
 
@@ -876,7 +905,7 @@ function showOutgoingMessage(message) {
   const container = document.getElementById('chatMessages');
 
   const bubble = document.createElement('div');
-  bubble.className = 'bg-sky-500 text-white text-sm px-3 py-2 rounded-lg self-end max-w-[70%]';
+  bubble.className = 'bg-sky-500 text-white text-sm px-3 py-2 rounded-lg self-end max-w-[70%] chat-bubble chat-bubble-outgoing';
   bubble.textContent = message;
 
   container.appendChild(bubble);
