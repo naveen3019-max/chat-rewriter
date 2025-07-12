@@ -808,9 +808,7 @@ function sendMessage() {
   showOutgoingMessage(message);
   input.value = '';
 }
-
-<!-- Add this to dashboard.html inside <script> after existing functions -->
-
+//incoming
 function showIncomingMessage(sender, message) {
   const container = document.getElementById('chatMessages');
 
@@ -822,7 +820,7 @@ function showIncomingMessage(sender, message) {
   bubble.textContent = `${message}  ← (${sender})`;
   bubbleWrapper.appendChild(bubble);
 
-  // 🌟 Fetch smart replies
+  // 🌟 Fetch smart replies only for the last message
   fetch('/api/smart-reply', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -831,22 +829,38 @@ function showIncomingMessage(sender, message) {
   .then(res => res.json())
   .then(data => {
     if (data.replies && data.replies.length > 0) {
-      const replyBar = document.createElement('div');
-      replyBar.className = 'flex gap-2 mt-1 flex-wrap';
+      const replyBarWrapper = document.createElement('div');
+      replyBarWrapper.className = 'flex gap-2 mt-1 flex-wrap items-center';
 
+      // Smart reply buttons
       data.replies.forEach(reply => {
         const btn = document.createElement('button');
-        btn.className = 'bg-sky-100 hover:bg-sky-200 text-sm px-3 py-1 rounded-full transition animate-pulse shadow-sm';
+        btn.className = 'bg-sky-100 hover:bg-sky-200 text-sm px-3 py-1 rounded-full transition shadow-sm';
         btn.textContent = reply;
 
         btn.onclick = () => {
           document.querySelector('input[type="text"]').value = reply;
+          replyBarWrapper.remove();  // ❌ Hide after selection
         };
 
-        replyBar.appendChild(btn);
+        replyBarWrapper.appendChild(btn);
       });
 
-      bubbleWrapper.appendChild(replyBar);
+      // ❌ Close button
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✖️';
+      closeBtn.className = 'text-red-500 text-xs ml-2 hover:text-red-700';
+      closeBtn.onclick = () => {
+        replyBarWrapper.remove(); // ❌ Hide when closed
+      };
+      replyBarWrapper.appendChild(closeBtn);
+
+      // ✅ Only keep one active replyBar
+      const existingBars = container.querySelectorAll('.smart-reply-bar');
+      existingBars.forEach(el => el.remove());
+
+      replyBarWrapper.classList.add('smart-reply-bar');
+      bubbleWrapper.appendChild(replyBarWrapper);
     }
   })
   .catch(err => {
