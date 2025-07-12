@@ -1010,6 +1010,36 @@ async function selectIntent(intent) {
     list.innerHTML = '<p class="text-red-500 text-sm">Failed to generate drafts.</p>';
   }
 }
+
+async function deleteChat() {
+  if (!targetPhone) {
+    alert("❗ No chat selected to delete.");
+    return;
+  }
+
+  const confirmDelete = confirm(`Are you sure you want to delete chat with ${targetPhone}?`);
+  if (!confirmDelete) return;
+
+  try {
+    const res = await fetch('/api/delete-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target: targetPhone })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ Chat deleted (for you only).");
+      document.getElementById("chatMessages").innerHTML = "";
+    } else {
+      alert("❌ Failed to delete chat.");
+    }
+  } catch (err) {
+    console.error("❌ Error deleting chat:", err);
+    alert("Something went wrong.");
+  }
+}
+
   </script>
 </body>
 </html>
