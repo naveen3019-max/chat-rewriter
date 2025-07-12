@@ -809,16 +809,54 @@ function sendMessage() {
   input.value = '';
 }
 
+<!-- Add this to dashboard.html inside <script> after existing functions -->
+
 function showIncomingMessage(sender, message) {
   const container = document.getElementById('chatMessages');
 
-  const bubble = document.createElement('div');
-  bubble.className = 'bg-gray-200 text-sm px-3 py-2 rounded-lg self-start max-w-[70%]';
-  bubble.textContent = `${message}  ← (${sender})`;
+  const bubbleWrapper = document.createElement('div');
+  bubbleWrapper.className = 'flex flex-col items-start gap-1 max-w-[70%]';
 
-  container.appendChild(bubble);
+  const bubble = document.createElement('div');
+  bubble.className = 'bg-gray-200 text-sm px-3 py-2 rounded-lg';
+  bubble.textContent = `${message}  ← (${sender})`;
+  bubbleWrapper.appendChild(bubble);
+
+  // 🌟 Fetch smart replies
+  fetch('/api/smart-reply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.replies && data.replies.length > 0) {
+      const replyBar = document.createElement('div');
+      replyBar.className = 'flex gap-2 mt-1 flex-wrap';
+
+      data.replies.forEach(reply => {
+        const btn = document.createElement('button');
+        btn.className = 'bg-sky-100 hover:bg-sky-200 text-sm px-3 py-1 rounded-full transition animate-pulse shadow-sm';
+        btn.textContent = reply;
+
+        btn.onclick = () => {
+          document.querySelector('input[type="text"]').value = reply;
+        };
+
+        replyBar.appendChild(btn);
+      });
+
+      bubbleWrapper.appendChild(replyBar);
+    }
+  })
+  .catch(err => {
+    console.error('❌ Smart reply failed:', err);
+  });
+
+  container.appendChild(bubbleWrapper);
   container.scrollTop = container.scrollHeight;
 }
+
 
 function showOutgoingMessage(message) {
   const container = document.getElementById('chatMessages');
