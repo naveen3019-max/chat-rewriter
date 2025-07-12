@@ -113,6 +113,7 @@ def handle_send_message(data):
         "to": to_phone,
         "message": message,
         "timestamp": datetime.datetime.utcnow()
+        "deleted_for": [] 
     })
 
     # Emit to recipient room
@@ -128,7 +129,8 @@ def get_messages(target_phone):
         "$or": [
             {"from": current_phone, "to": target_phone},
             {"from": target_phone, "to": current_phone}
-        ]
+        ],
+         "deleted_for": { "$ne": current_phone }
     }, {"_id": 0}).sort("timestamp", 1))  # sort by time
 
     return jsonify({"chat": chat})
@@ -375,6 +377,29 @@ Return only the replies like this:
     except Exception as e:
         print("❌ Smart Reply Error:", e)
         return jsonify({"error": "Failed to generate smart replies"}), 500
+
+
+@app.route('/api/delete-chat', methods=['POST'])
+def delete_chat():
+    if "phone" not in session or not request.json:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user_phone = session["phone"]
+    target_phone = request.json.get("target")
+
+    # Mark all messages between the two users as deleted for this user
+    db.messages.update_many(
+        {
+            "$or": [
+                {"from": user_phone, "to": target_phone},
+                {"from": target_phone, "to": user_phone}
+            ]
+        },
+        {"$addToSet": {"deleted_for": user_phone}}  # ✅ Only hides for current user
+    )
+
+    return jsonify({"success": True, "message": "Chat hidden for you."})
+
 
 
 if __name__ == '__main__':
