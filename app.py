@@ -337,5 +337,45 @@ Only return the 3 messages. Format:
 
 
 
+@app.route('/api/smart-reply', methods=['POST'])
+def smart_reply():
+    try:
+        data = request.get_json()
+        last_message = data.get("message", "").strip()
+
+        if not last_message:
+            return jsonify({"error": "Message is required"}), 400
+
+        prompt = f"""
+You are an AI assistant that generates smart, human-like replies.
+
+Context: The user received the following message:
+"{last_message}"
+
+Generate 3 possible replies that are:
+1. Friendly and natural
+2. Slightly humorous or casual
+3. A bit apologetic or thoughtful
+
+Return only the replies like this:
+1. <Reply One>
+2. <Reply Two>
+3. <Reply Three>
+"""
+
+        response = model.generate_content(prompt)
+        if not response or not response.text:
+            return jsonify({"error": "No response"}), 500
+
+        lines = response.text.strip().split("\n")
+        replies = [line[3:].strip() for line in lines if line.strip().startswith(("1.", "2.", "3."))]
+
+        return jsonify({"replies": replies})
+
+    except Exception as e:
+        print("❌ Smart Reply Error:", e)
+        return jsonify({"error": "Failed to generate smart replies"}), 500
+
+
 if __name__ == '__main__':
     socketio.run(app, debug=True)
