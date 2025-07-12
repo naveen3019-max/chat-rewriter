@@ -1039,6 +1039,7 @@ async function selectIntent(intent) {
 
 //delete
 async function deleteChat() {
+  console.log("🗑️ Delete triggered"); // ← Add this
   if (!targetPhone) {
     alert("❗ No chat selected to delete.");
     return;
@@ -1058,7 +1059,7 @@ async function deleteChat() {
     if (data.success) {
       alert("✅ Chat deleted (for you only).");
       document.getElementById("chatMessages").innerHTML = "";
-      await loadChatMessages(); // ✅ fetch again
+      await loadChatMessages();
     } else {
       alert("❌ Failed to delete chat.");
     }
