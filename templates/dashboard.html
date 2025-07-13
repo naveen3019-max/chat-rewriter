@@ -883,7 +883,7 @@ function showIncomingMessage(sender, message) {
 
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble-animate bg-gray-200 text-sm px-3 py-2 rounded-lg';
-  bubble.textContent = `${message}  ← (${sender})`;
+  bubble.textContent = message ;
 
   bubbleWrapper.appendChild(bubble);
   container.appendChild(bubbleWrapper);
