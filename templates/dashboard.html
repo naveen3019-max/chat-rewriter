@@ -766,77 +766,84 @@ async function loadUserProfile() {
   let socket = null;
 let currentUserPhone = null;
 let targetPhone = null;
-
 async function connectToUser() {
   targetPhone = document.getElementById('targetPhoneInput').value.trim();
 
-  const profileRes = await fetch('/api/me');
-  const profile = await profileRes.json();
-  currentUserPhone = profile.phone;
+  // Avoid redundant fetch if already available
+  if (!currentUserPhone) {
+    const profileRes = await fetch('/api/me');
+    const profile = await profileRes.json();
+    currentUserPhone = profile.phone;
+  }
 
-  if (!socket) {
+  // ✅ Use optimized socket logic
+  if (!socket || !socket.connected) {
     socket = io();
 
     socket.on('connect', () => {
-      socket.emit('join', { phone: currentUserPhone });
-      console.log("Connected and joined room:", currentUserPhone);
-    });
-     socket.on('receive_message', (data) => {
-  const { from, message } = data;
-
-  // 👇 Only for real-time messages
-  const wrapper = showIncomingMessage(from, message);
-
-  // 🔥 Remove all previous Smart Reply Bars
-  document.querySelectorAll('.smart-reply-bar').forEach(el => el.remove());
-
-  // 🌟 Only for latest message
-  fetch('/api/smart-reply', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message })
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.replies && data.replies.length > 0) {
-        const replyBar = document.createElement('div');
-        replyBar.className = 'smart-reply-bar flex gap-2 mt-1 flex-wrap';
-
-        data.replies.forEach(reply => {
-          const btn = document.createElement('button');
-          btn.className = 'bg-sky-100 hover:bg-sky-200 text-sm px-3 py-1 rounded-full transition animate-pulse shadow-sm';
-          btn.textContent = reply;
-
-          btn.onclick = () => {
-            document.querySelector('input[type="text"]').value = reply;
-            replyBar.remove(); // ✅ Hide after reply click
-          };
-
-          replyBar.appendChild(btn);
-        });
-
-        // ❌ Close Button
-        const closeBtn = document.createElement('button');
-        closeBtn.textContent = '✖';
-        closeBtn.className = 'text-red-500 text-sm font-bold ml-auto';
-        closeBtn.onclick = () => replyBar.remove();
-        replyBar.appendChild(closeBtn);
-
-        wrapper.appendChild(replyBar); // ✅ Attach to the recent message
+      if (!socket.hasJoined) {
+        socket.emit('join', { phone: currentUserPhone });
+        socket.hasJoined = true;
+        console.log("✅ Connected and joined room:", currentUserPhone);
       }
-    })
-    .catch(err => {
-      console.error('❌ Smart reply fetch failed:', err);
     });
-});
 
+    socket.on('receive_message', (data) => {
+      const { from, message } = data;
+
+      if (!targetPhone) {
+        targetPhone = from;
+        console.log("📲 Auto-setting targetPhone to:", from);
+      }
+
+      const wrapper = showIncomingMessage(from, message);
+
+      document.querySelectorAll('.smart-reply-bar').forEach(el => el.remove());
+
+      fetch('/api/smart-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.replies && data.replies.length > 0) {
+          const replyBar = document.createElement('div');
+          replyBar.className = 'smart-reply-bar flex gap-2 mt-1 flex-wrap';
+
+          data.replies.forEach(reply => {
+            const btn = document.createElement('button');
+            btn.className = 'bg-sky-100 hover:bg-sky-200 text-sm px-3 py-1 rounded-full transition animate-pulse shadow-sm';
+            btn.textContent = reply;
+
+            btn.onclick = () => {
+              document.querySelector('input[type="text"]').value = reply;
+              replyBar.remove();
+            };
+
+            replyBar.appendChild(btn);
+          });
+
+          const closeBtn = document.createElement('button');
+          closeBtn.textContent = '✖';
+          closeBtn.className = 'text-red-500 text-sm font-bold ml-auto';
+          closeBtn.onclick = () => replyBar.remove();
+          replyBar.appendChild(closeBtn);
+
+          wrapper.appendChild(replyBar);
+        }
+      })
+      .catch(err => {
+        console.error('❌ Smart reply fetch failed:', err);
+      });
+    });
   }
 
   alert(`✅ Connected to chat with ${targetPhone}`);
-
   await loadChatMessages();
-
 }
+
+
 async function loadChatMessages() {
   const res = await fetch(`/api/messages/${targetPhone}`);
   const data = await res.json();
